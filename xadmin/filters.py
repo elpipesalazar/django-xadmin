@@ -423,62 +423,62 @@ class RelatedFieldListFilter(ListFieldFilter):
 @manager.register
 class MultiSelectFieldListFilter(ListFieldFilter):
     """ Delegates the filter to the default filter and ors the results of each
-     
+
     Lists the distinct values of each field as a checkbox
-    Uses the default spec for each 
-     
+    Uses the default spec for each
+
     """
     template = 'xadmin/filters/checklist.html'
     lookup_formats = {'in': '%s__in'}
     cache_config = {'enabled':False,'key':'quickfilter_%s','timeout':3600,'cache':'default'}
- 
+
     @classmethod
     def test(cls, field, request, params, model, admin_view, field_path):
         return True
- 
+
     def get_cached_choices(self):
         if not self.cache_config['enabled']:
             return None
         c = get_cache(self.cache_config['cache'])
         return c.get(self.cache_config['key']%self.field_path)
-    
+
     def set_cached_choices(self,choices):
         if not self.cache_config['enabled']:
             return
         c = get_cache(self.cache_config['cache'])
         return c.set(self.cache_config['key']%self.field_path,choices)
-    
+
     def __init__(self, field, request, params, model, model_admin, field_path,field_order_by=None,field_limit=None,sort_key=None,cache_config=None):
         super(MultiSelectFieldListFilter,self).__init__(field, request, params, model, model_admin, field_path)
-        
+
         # Check for it in the cachce
         if cache_config is not None and type(cache_config)==dict:
             self.cache_config.update(cache_config)
-        
+
         if self.cache_config['enabled']:
             self.field_path = field_path
             choices = self.get_cached_choices()
             if choices:
                 self.lookup_choices = choices
                 return
-            
+
         # Else rebuild it
-        queryset = self.admin_view.queryset().exclude(**{"%s__isnull"%field_path:True}).values_list(field_path, flat=True).distinct() 
+        queryset = self.admin_view.queryset().exclude(**{"%s__isnull"%field_path:True}).values_list(field_path, flat=True).distinct()
         #queryset = self.admin_view.queryset().distinct(field_path).exclude(**{"%s__isnull"%field_path:True})
-        
+
         if field_order_by is not None:
             # Do a subquery to order the distinct set
             queryset = self.admin_view.queryset().filter(id__in=queryset).order_by(field_order_by)
-            
+
         if field_limit is not None and type(field_limit)==int and queryset.count()>field_limit:
             queryset = queryset[:field_limit]
-        
+
         self.lookup_choices = [str(it) for it in queryset.values_list(field_path,flat=True) if str(it).strip()!=""]
         if sort_key is not None:
             self.lookup_choices = sorted(self.lookup_choices,key=sort_key)
-        
+
         if self.cache_config['enabled']:
-            self.set_cached_choices(self.lookup_choices) 
+            self.set_cached_choices(self.lookup_choices)
 
     def choices(self):
         self.lookup_in_val = (type(self.lookup_in_val) in (tuple,list)) and self.lookup_in_val or list(self.lookup_in_val)
