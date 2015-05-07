@@ -23,6 +23,7 @@ from xadmin.views.base import CommAdminView, ModelAdminView, filter_hook, csrf_p
 from xadmin.views.edit import CreateAdminView
 from xadmin.views.list import ListAdminView
 from xadmin.util import unquote
+import datetime
 import copy
 
 
@@ -361,6 +362,90 @@ class PartialBaseWidget(BaseWidget):
 
 
 @widget_manager.register
+class CardWidget(BaseWidget):
+    widget_type = 'card'
+    description = _(u'Show a card with count information models')
+    template = "xadmin/widgets/card.html"
+    base_title = _(u"Cards")
+    widget_icon = 'fa fa-caret-square-o-right'
+
+    def convert(self, data):
+        self.q_cards = data.pop('cards', [])
+
+    def get_model(self, model_or_label):
+        if isinstance(model_or_label, ModelBase):
+            return model_or_label
+        else:
+            return models.get_model(*model_or_label.lower().split('.'))
+
+    def context(self, context):
+        cards = []
+        for c in self.q_cards:
+            card = {}
+            if 'model' in c:
+                model = self.get_model(c['model'])
+
+                if not self.user.has_perm("%s.view_%s" % (model._meta.app_label, model._meta.model_name)):
+                    continue
+
+                if 'url' in c:
+                    card['url'] = c['url']
+                else:
+                    card['url'] = reverse("%s:%s_%s_%s" % (self.admin_site.app_name, model._meta.app_label,
+                                                      model._meta.model_name, c.get('view', 'changelist')))
+                if 'query' in c:
+                    if c['query'] == "new_users":
+                       card['url'] = card['url'] + '?_cols=user__first_name.user__last_name.user__email&_p_user__date_joined__gte=%s&_p_user__date_joined__lte=%s'%( str( datetime.datetime.combine( datetime.date.today(), datetime.time.min ) ), str( datetime.datetime.combine( datetime.date.today(), datetime.time.max ) ) )
+                    elif c['query'] == "going":
+                        card['url'] = card['url'] + '?_p_state__contains=going'
+                    elif c['query'] == "wannago":
+                        card['url'] = card['url'] + '?_p_state__contains=wannago'
+                    elif c['query'] == "active_members":
+                        card['url'] = card['url'] + '?_p_state__contains=wannago'
+
+                card['title'] = model._meta.verbose_name
+                card['icon'] = self.dashboard.get_model_icon(model)
+            else:
+                try:
+                    card['url'] = reverse(c['url'])
+                except NoReverseMatch:
+                    card['url'] = c['url']
+
+            if 'title' in c:
+                card['title'] = c['title']
+            if 'icon' in c:
+                card['icon'] = c['icon']
+
+            if 'model' in c:
+                model = self.get_model(c['model'])
+                if 'query' in c:
+                    if c['query'] == "new_users":
+                        try:
+                            today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+                            today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+                            card['count'] = model.objects.filter(user__date_joined__range = (today_min,today_max) ).count()
+                        except Exception as e:
+                            pass
+                    elif c['query'] == "going" or c['query'] == "wannago":
+                        try:
+                            card['count'] = model.objects.filter(state=c['query']).count()
+                        except Exception, e:
+                            pass
+                    elif c['query'] == "active_members":
+                        card['count'] = model.objects.filter(is_active=True).count()
+                    elif c['query'] == "members_cancellations":
+                        card['count'] = model.objects.filter(is_active=False).count()
+                else:
+                    card['count'] = model.objects.all().count()
+            cards.append(card)
+
+        context.update({'cards': cards})
+
+    def has_perm(self):
+        return True
+
+
+@widget_manager.register
 class QuickBtnWidget(BaseWidget):
     widget_type = 'qbutton'
     description = _(u'Quick button Widget, quickly open any page.')
@@ -385,7 +470,11 @@ class QuickBtnWidget(BaseWidget):
                 model = self.get_model(b['model'])
                 if not self.user.has_perm("%s.view_%s" % (model._meta.app_label, model._meta.model_name)):
                     continue
-                btn['url'] = reverse("%s:%s_%s_%s" % (self.admin_site.app_name, model._meta.app_label,
+
+                if 'url' in b:
+                    btn['url'] = b['url']
+                else:
+                    btn['url'] = reverse("%s:%s_%s_%s" % (self.admin_site.app_name, model._meta.app_label,
                                                       model._meta.model_name, b.get('view', 'changelist')))
                 btn['title'] = model._meta.verbose_name
                 btn['icon'] = self.dashboard.get_model_icon(model)
@@ -483,7 +572,7 @@ class AddFormWidget(ModelBaseWidget, PartialBaseWidget):
 
 class Dashboard(CommAdminView):
 
-    widget_customiz = True
+    widget_customiz = False
     widgets = []
     title = _(u"Dashboard")
     icon = None
