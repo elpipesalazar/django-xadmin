@@ -396,12 +396,14 @@ class CardWidget(BaseWidget):
 				if 'query' in c:
 					if c['query'] == "new_users":
 					   card['url'] = card['url'] + '?_cols=user__first_name.user__last_name.user__email&_p_user__date_joined__gte=%s&_p_user__date_joined__lte=%s'%( str( datetime.datetime.combine( datetime.date.today(), datetime.time.min ) ), str( datetime.datetime.combine( datetime.date.today(), datetime.time.max ) ) )
+					elif c['query'] == "yesterday_new_users":
+						card['url'] = card['url'] + '?_p_user__date_joined__gte=%s&_p_user__date_joined__lte=%s'%( str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-1), datetime.time.min ) ), str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-1), datetime.time.max ) ) )
 					elif c['query'] == "going":
 						card['url'] = card['url'] + '?_p_state__contains=going'
 					elif c['query'] == "wannago":
 						card['url'] = card['url'] + '?_p_state__contains=wannago'
 					elif c['query'] == "active_members":
-						card['url'] = card['url'] + '?_p_is_active__exact=1'
+						card['url'] = card['url'] + '?p_user__last_login__gte=%s&_p_user__last_login__lte=%s'%( str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-30), datetime.time.min ) ), str( datetime.datetime.combine( datetime.date.today(), datetime.time.max ) ) )
 					elif c['query'] == "members_cancellations":
 						card['url'] = card['url'] + '?_p_is_active__exact=0'
 
@@ -428,13 +430,22 @@ class CardWidget(BaseWidget):
 							card['count'] = model.objects.filter(user__date_joined__range = (today_min,today_max) ).count()
 						except Exception as e:
 							pass
+					elif c['query'] == "yesterday_new_users":
+						try:
+							yesterday_min = datetime.datetime.combine(datetime.datetime.now() + datetime.timedelta(-1), datetime.time.min)
+							yesterday_max = datetime.datetime.combine(datetime.datetime.now() + datetime.timedelta(-1), datetime.time.max)
+							card['count'] = model.objects.filter(user__date_joined__range = (yesterday_min,yesterday_max) ).count()
+						except Exception as e:
+							pass
 					elif c['query'] == "going" or c['query'] == "wannago":
 						try:
 							card['count'] = model.objects.filter(state=c['query']).count()
 						except Exception, e:
 							pass
 					elif c['query'] == "active_members":
-						card['count'] = model.objects.filter(is_active=True).count()
+						start_date = datetime.datetime.combine(datetime.datetime.now() + datetime.timedelta(-30), datetime.time.min)
+						end_date = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
+						card['count'] = model.objects.filter(last_login__range=(start_date, end_date)).count()
 					elif c['query'] == "members_cancellations":
 						card['count'] = model.objects.filter(is_active=False).count()
 				else:

@@ -5,7 +5,7 @@
   <div class="row">
     {% for btn in btns %}
     <div class="col-xs-6 col-sm-4 col-md-3">
-    <a href="{{ btn.url }}" class="btn btn-primary btn-quick">
+    <a href="{{ btn.url }}" class="btn btn-primary btn-quick" style="background-color:#acc748;border-color:#acc748;">
       <i class="{% if btn.icon %}{{btn.icon}}{%else%}fa fa-rocket{% endif %}"></i>
       <p>{{ btn.title }}</p>
     </a>

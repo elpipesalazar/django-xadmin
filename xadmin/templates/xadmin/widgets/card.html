@@ -5,12 +5,12 @@
   <div class="row">
     {% for card in cards %}
     <div class="col-xs-6 col-sm-4 col-md-3">
-      <a href="{{ card.url }}" class="btn btn-primary btn-quick">
-        <i class="{% if card.icon %}{{card.icon}}{%else%}fa fa-rocket{% endif %}"></i>
-        <div class="col-xs-12 text-center" style="margin: 5px 0;">
+      <a href="{{ card.url }}" class="btn btn-primary btn-quick" style="background-color:#77c4ee;border-color:#77c4ee;">
+  <i class="{% if card.icon %}{{card.icon}}{%else%}fa fa-rocket{% endif %}"></i>
+  <div class="col-xs-12 text-center" style="margin: 5px 0;">
           <div class="huge">{{ card.count }}</div>
         </div>
-        <p>{{ card.title }}</p>
+        <p style="margin: 35px 0 10.5px;">{{ card.title }}</p>
       </a>
     </div>
     {% endfor %}
