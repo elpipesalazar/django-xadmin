@@ -403,7 +403,7 @@ class CardWidget(BaseWidget):
 					elif c['query'] == "wannago":
 						card['url'] = card['url'] + '?_p_state__contains=wannago'
 					elif c['query'] == "active_members":
-						card['url'] = card['url'] + '?p_user__last_login__gte=%s&_p_user__last_login__lte=%s'%( str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-30), datetime.time.min ) ), str( datetime.datetime.combine( datetime.date.today(), datetime.time.max ) ) )
+						card['url'] = card['url'] + '?_p_last_login__gte=%s&_p_last_login__lte=%s'%( str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-30), datetime.time.min ) ), str( datetime.datetime.combine( datetime.date.today(), datetime.time.max ) ) )
 					elif c['query'] == "members_cancellations":
 						card['url'] = card['url'] + '?_p_is_active__exact=0'
 
