@@ -470,12 +470,14 @@ class ModelAdminView(CommAdminView):
     ordering = None
     model = None
     remove_permissions = []
+    request = None
 
     def __init__(self, request, *args, **kwargs):
         self.opts = self.model._meta
         self.app_label = self.model._meta.app_label
         self.model_name = self.model._meta.model_name
         self.model_info = (self.app_label, self.model_name)
+        self.request = request
 
         super(ModelAdminView, self).__init__(request, *args, **kwargs)
 

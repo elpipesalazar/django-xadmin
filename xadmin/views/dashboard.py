@@ -398,12 +398,29 @@ class CardWidget(BaseWidget):
 					   card['url'] = card['url'] + '?_cols=user__first_name.user__last_name.user__email&_p_user__date_joined__gte=%s&_p_user__date_joined__lte=%s'%( str( datetime.datetime.combine( datetime.date.today(), datetime.time.min ) ), str( datetime.datetime.combine( datetime.date.today(), datetime.time.max ) ) )
 					elif c['query'] == "yesterday_new_users":
 						card['url'] = card['url'] + '?_p_user__date_joined__gte=%s&_p_user__date_joined__lte=%s'%( str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-1), datetime.time.min ) ), str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-1), datetime.time.max ) ) )
+					
 					elif c['query'] == "going":
 						card['url'] = card['url'] + '?_p_state__contains=going'
+
 					elif c['query'] == "wannago":
 						card['url'] = card['url'] + '?_p_state__contains=wannago'
+					
+
 					elif c['query'] == "active_members":
-						card['url'] = card['url'] + '?_p_last_login__gte=%s&_p_last_login__lte=%s'%( str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-30), datetime.time.min ) ), str( datetime.datetime.combine( datetime.date.today(), datetime.time.max ) ) )
+						
+						now = datetime.datetime.now()
+						first = datetime.datetime(day=1, month=now.month, year=now.year)
+						last = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
+						card['url'] = card['url'] + '?_p_last_login__gte=%s&_p_last_login__lte=%s'%( str( first ), str( last ) )
+					elif c['query'] == "active_members_last_month":
+						
+						now = datetime.datetime.now()
+						last_date = datetime.datetime(day=1, month=now.month, year=now.year)
+						last_date = datetime.datetime.combine(last_date - datetime.timedelta(days=1), datetime.time.max )
+						first_date = datetime.datetime(day=1, month=last_date.month, year=last_date.year)
+
+						card['url'] = card['url'] + '?_p_last_login__gte=%s&_p_last_login__lte=%s'%( str( first_date ) , str( last_date ) )
+					
 					elif c['query'] == "members_cancellations":
 						card['url'] = card['url'] + '?_p_is_active__exact=0'
 
@@ -442,12 +459,38 @@ class CardWidget(BaseWidget):
 							card['count'] = model.objects.filter(state=c['query']).count()
 						except Exception, e:
 							pass
+					elif c['query'] == "unique_going" or c['query'] == "unique_wannago":
+						try:
+							card['count'] = model.objects.filter(state=c['query'].replace("unique_","")).distinct('user').count()
+						except Exception, e:
+							print(str(e))
+
 					elif c['query'] == "active_members":
-						start_date = datetime.datetime.combine(datetime.datetime.now() + datetime.timedelta(-30), datetime.time.min)
-						end_date = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
-						card['count'] = model.objects.filter(last_login__range=(start_date, end_date)).count()
+						
+						now = datetime.datetime.now()
+						first = datetime.datetime(day=1, month=now.month, year=now.year)
+						last = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
+
+						card['count'] = model.objects.filter(last_login__range=(first, last)).count()
+
+					elif c['query'] == "active_members_last_month":
+						
+						now = datetime.datetime.now()
+						last_date = datetime.datetime(day=1, month=now.month, year=now.year)
+						last_date = datetime.datetime.combine(last_date - datetime.timedelta(days=1), datetime.time.max )
+						first_date = datetime.datetime(day=1, month=last_date.month, year=last_date.year)
+
+						card['count'] = model.objects.filter(last_login__range=(first_date, last_date)).count()
+
+
 					elif c['query'] == "members_cancellations":
 						card['count'] = model.objects.filter(is_active=False).count()
+
+					elif c['query'] == "onboarding_not_finished":
+
+						total_users = model.objects.all().count()
+						no_finished = total_users - model.objects.filter(onboarding_finished=True).count()
+						card['count'] = ( no_finished * 100 ) / total_users
 				else:
 					card['count'] = model.objects.all().count()
 			cards.append(card)
