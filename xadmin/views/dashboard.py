@@ -404,6 +404,12 @@ class CardWidget(BaseWidget):
 
 					elif c['query'] == "wannago":
 						card['url'] = card['url'] + '?_p_state__contains=wannago'
+
+					elif c['query'] == "unique_going":
+						card['url'] = card['url'] + '?_p_state__contains=going&distinct=true'
+
+					elif c['query'] == "unique_wannago":
+						card['url'] = card['url'] + '?_p_state__contains=wannago&distinct=true'
 					
 
 					elif c['query'] == "active_members":
