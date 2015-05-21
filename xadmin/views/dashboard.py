@@ -430,6 +430,9 @@ class CardWidget(BaseWidget):
 					elif c['query'] == "members_cancellations":
 						card['url'] = card['url'] + '?_p_is_active__exact=0'
 
+					elif c['query'] == "onboarding_not_finished":
+						card['url'] = card['url'] + '?_p_onboarding_finished__exact=0'
+
 				card['title'] = model._meta.verbose_name
 				card['icon'] = self.dashboard.get_model_icon(model)
 			else:
