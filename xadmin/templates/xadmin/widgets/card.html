@@ -4,7 +4,7 @@
 {% block content %}
   <div class="row">
     {% for card in cards %}
-    <div class="col-xs-6 col-sm-4 col-md-3">
+    <div class="col-xs-6 col-sm-4 col-md-3" style="min-width:250px;">
       <a href="{{ card.url }}" class="btn btn-primary btn-quick" style="background-color:#77c4ee;border-color:#77c4ee;">
         <i class="{% if card.icon %}{{card.icon}}{%else%}fa fa-rocket{% endif %}"></i>
         <div class="col-xs-12 text-center" style="margin: 5px 0;">

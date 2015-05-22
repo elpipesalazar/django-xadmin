@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.db import models
+from django.db.models import Q
 from django.db.models.base import ModelBase
 from django.forms.forms import DeclarativeFieldsMetaclass
 from django.forms.util import flatatt
@@ -23,6 +24,7 @@ from xadmin.views.base import CommAdminView, ModelAdminView, filter_hook, csrf_p
 from xadmin.views.edit import CreateAdminView
 from xadmin.views.list import ListAdminView
 from xadmin.util import unquote
+from domain.models import UserSchedule, ChatMessage
 import datetime
 import copy
 
@@ -394,9 +396,13 @@ class CardWidget(BaseWidget):
 					card['url'] = reverse("%s:%s_%s_%s" % (self.admin_site.app_name, model._meta.app_label,
 													  model._meta.model_name, c.get('view', 'changelist')))
 				if 'query' in c:
+
 					if c['query'] == "new_users":
+
 					   card['url'] = card['url'] + '?_cols=user__first_name.user__last_name.user__email&_p_user__date_joined__gte=%s&_p_user__date_joined__lte=%s'%( str( datetime.datetime.combine( datetime.date.today(), datetime.time.min ) ), str( datetime.datetime.combine( datetime.date.today(), datetime.time.max ) ) )
+
 					elif c['query'] == "yesterday_new_users":
+
 						card['url'] = card['url'] + '?_p_user__date_joined__gte=%s&_p_user__date_joined__lte=%s'%( str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-1), datetime.time.min ) ), str( datetime.datetime.combine( datetime.datetime.now() + datetime.timedelta(-1), datetime.time.max ) ) )
 					
 					elif c['query'] == "going":
@@ -418,6 +424,7 @@ class CardWidget(BaseWidget):
 						first = datetime.datetime(day=1, month=now.month, year=now.year)
 						last = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
 						card['url'] = card['url'] + '?_p_last_login__gte=%s&_p_last_login__lte=%s'%( str( first ), str( last ) )
+					
 					elif c['query'] == "active_members_last_month":
 						
 						now = datetime.datetime.now()
@@ -426,6 +433,15 @@ class CardWidget(BaseWidget):
 						first_date = datetime.datetime(day=1, month=last_date.month, year=last_date.year)
 
 						card['url'] = card['url'] + '?_p_last_login__gte=%s&_p_last_login__lte=%s'%( str( first_date ) , str( last_date ) )
+
+					elif c['query'] == "active_members_with_actions":
+
+						now = datetime.datetime.now()
+						first_date = datetime.datetime(day=1, month=now.month, year=now.year)
+						last_date = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
+
+						card['url'] = card['url'] + '?_p_user__last_login__gte=%s&_p_user__last_login__lte=%s&actions=true'%( str( first_date ) , str( last_date ) )
+
 					
 					elif c['query'] == "members_cancellations":
 						card['url'] = card['url'] + '?_p_is_active__exact=0'
@@ -490,6 +506,15 @@ class CardWidget(BaseWidget):
 						first_date = datetime.datetime(day=1, month=last_date.month, year=last_date.year)
 
 						card['count'] = model.objects.filter(last_login__range=(first_date, last_date)).count()
+
+					elif c['query'] == "active_members_with_actions":
+
+						now = datetime.datetime.now()
+						first_date = datetime.datetime(day=1, month=now.month, year=now.year)
+						last_date = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
+						schedules = UserSchedule.objects.filter(created__range = (first_date, last_date) )
+						messages = ChatMessage.objects.filter(created__range = (first_date, last_date) )
+						card['count'] = model.objects.filter(Q(user__last_login__range=(first_date, last_date), userschedule__in = schedules) | Q(user__last_login__range=(first_date, last_date), user__chatmessage__in = messages) ).distinct().count()
 
 
 					elif c['query'] == "members_cancellations":
