@@ -449,6 +449,40 @@ class CardWidget(BaseWidget):
 					elif c['query'] == "onboarding_not_finished":
 						card['url'] = card['url'] + '?_p_onboarding_finished__exact=0'
 
+					elif c['query'] == "unique_messages":
+						card['url'] = card['url'] + '?distinct=true'
+
+					elif c['query'] == "friendship":
+						
+						now = datetime.datetime.now()
+						first = datetime.datetime(day=1, month=now.month, year=now.year)
+						last = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
+						card['url'] = card['url'] + '?_p_created__gte=%s&_p_created__lte=%s'%( str( first ), str( last ) )
+					
+					elif c['query'] == "friendship_lastmonth":
+						
+						now = datetime.datetime.now()
+						last_date = datetime.datetime(day=1, month=now.month, year=now.year)
+						last_date = datetime.datetime.combine(last_date - datetime.timedelta(days=1), datetime.time.max )
+						first_date = datetime.datetime(day=1, month=last_date.month, year=last_date.year)
+						card['url'] = card['url'] + '?_p_created__gte=%s&_p_created__lte=%s'%( str( first_date ), str( last_date ) )
+
+
+					elif c['query'] == "friendship_unique":
+						
+						now = datetime.datetime.now()
+						first = datetime.datetime(day=1, month=now.month, year=now.year)
+						last = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
+						card['url'] = card['url'] + '?_p_created__gte=%s&_p_created__lte=%s&distinct=true'%( str( first ), str( last ) )
+					
+					elif c['query'] == "friendship_unique_lastmonth":
+						
+						now = datetime.datetime.now()
+						last_date = datetime.datetime(day=1, month=now.month, year=now.year)
+						last_date = datetime.datetime.combine(last_date - datetime.timedelta(days=1), datetime.time.max )
+						first_date = datetime.datetime(day=1, month=last_date.month, year=last_date.year)
+						card['url'] = card['url'] + '?_p_created__gte=%s&_p_created__lte=%s&distinct=true'%( str( first_date ), str( last_date ) )
+
 				card['title'] = model._meta.verbose_name
 				card['icon'] = self.dashboard.get_model_icon(model)
 			else:
@@ -525,6 +559,40 @@ class CardWidget(BaseWidget):
 						total_users = model.objects.all().count()
 						no_finished = total_users - model.objects.filter(onboarding_finished=True).count()
 						card['count'] = ( no_finished * 100 ) / total_users
+
+					elif c['query'] == "unique_messages":
+
+						card['count'] = model.objects.order_by('user').distinct('user').count()
+
+					elif c['query'] == "friendship":
+						now = datetime.datetime.now()
+						first = datetime.datetime(day=1, month=now.month, year=now.year)
+						last = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
+
+						card['count'] = model.objects.filter(created__range=(first, last)).count()
+
+					elif c['query'] == "friendship_lastmonth":
+						now = datetime.datetime.now()
+						last_date = datetime.datetime(day=1, month=now.month, year=now.year)
+						last_date = datetime.datetime.combine(last_date - datetime.timedelta(days=1), datetime.time.max )
+						first_date = datetime.datetime(day=1, month=last_date.month, year=last_date.year)
+
+						card['count'] = model.objects.filter(created__range=(first_date, last_date)).count()
+
+					elif c['query'] == "friendship_unique":
+						now = datetime.datetime.now()
+						first = datetime.datetime(day=1, month=now.month, year=now.year)
+						last = datetime.datetime.combine( datetime.date.today(), datetime.time.max )
+
+						card['count'] = model.objects.filter(created__range=(first, last)).order_by('from_user').distinct('from_user').count()
+
+					elif c['query'] == "friendship_unique_lastmonth":
+						now = datetime.datetime.now()
+						last_date = datetime.datetime(day=1, month=now.month, year=now.year)
+						last_date = datetime.datetime.combine(last_date - datetime.timedelta(days=1), datetime.time.max )
+						first_date = datetime.datetime(day=1, month=last_date.month, year=last_date.year)
+
+						card['count'] = model.objects.filter(created__range=(first_date, last_date)).order_by('from_user').distinct('from_user').count()
 				else:
 					card['count'] = model.objects.all().count()
 			cards.append(card)
